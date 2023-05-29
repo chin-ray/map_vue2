@@ -9,7 +9,13 @@ export default new Router({
     {
       path: '/',
       name: 'Layout',
-      component: Layout
+      component: Layout,
+      children: [
+        {
+          path: '/',
+          component: () => import('@/views/index.vue')
+        }
+      ]
     }
   ]
 })
