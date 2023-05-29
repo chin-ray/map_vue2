@@ -1,7 +1,6 @@
 <template>
   <div class="views-index-wrap">
     <div id="mapContainer"></div>
-    首页
   </div>
 </template>
 
@@ -9,8 +8,7 @@
 export default {
   name: 'Home',
   data () {
-    return {
-    }
+    return {}
   },
   mounted () {
     this.initMap()
@@ -36,5 +34,8 @@ export default {
 #mapContainer {
   width: 100%;
   height: 100%;
+}
+#mapContainer>>>.anchorBL {
+  display: none !important;
 }
 </style>
