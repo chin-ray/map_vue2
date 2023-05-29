@@ -3,6 +3,14 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import VueBMap from 'vue-bmap-gl'
+import 'vue-bmap-gl/dist/style.css'
+
+Vue.use(VueBMap)
+VueBMap.initBMapApiLoader({
+  ak: '',
+  v: '1.0'
+})
 
 Vue.config.productionTip = false
 
