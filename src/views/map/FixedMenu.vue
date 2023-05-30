@@ -25,7 +25,8 @@
         </el-button>
       </div>
     </el-popover>
-    <el-button>编辑</el-button>
+    <el-button v-if="!editing" @click="handleEdit">编辑</el-button>
+    <el-button v-else @click="handleSave">保存</el-button>
   </div>
 </template>
 
@@ -56,6 +57,9 @@ export default {
       }
     }
   },
+  computed: {
+    editing() { return this.$store.state.editing }
+  },
   methods: {
     // 绘制类型选中事件
     handleCheck(type) {
@@ -65,6 +69,12 @@ export default {
       }
       this.drawType = relType;
       this.visible = false;
+    },
+    handleEdit() {
+      this.$store.dispatch('A_changeEdit', true)
+    },
+    handleSave() {
+      this.$store.dispatch('A_changeEdit', false)
     }
   }
 };
