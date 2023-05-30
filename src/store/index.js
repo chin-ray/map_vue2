@@ -23,9 +23,12 @@ const actions = {
   A_setOverlay(state, val) {
     state.commit("M_setOverlay", val);
   },
-  A_removeOverlay(state, val) {
-    state.commit("M_removeOverlay", val);
+  A_removeOverlay(state) {
+    state.commit("M_removeOverlay");
   },
+  A_confirmRemove(state) {
+    state.commit("M_confirmRemove");
+  }
 };
 // 数据操作
 const mutations = {
@@ -42,8 +45,12 @@ const mutations = {
     state.curOverlay = val;
   },
   M_removeOverlay(state) {
-    state.deleting = true
-    this._vm.$message({ type: 'success', message: '删除成功!' });
+    state.deleting = true;
+    this._vm.$message({ type: "success", message: "删除成功!" });
+  },
+  M_confirmRemove(state) {
+    state.curOverlay = null;
+    state.deleting = false;
   }
 };
 // 数据加工/缓存

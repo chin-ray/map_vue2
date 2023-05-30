@@ -11,34 +11,33 @@ export default {
     return {
       map: null, // 地图实例
       points: [], // 绘制直线两点
-      drawingManager: null, // 绘制图形实例
-      curOverlay: null // 当前编辑选中图形
+      drawingManager: null // 绘制图形实例
     };
   },
   mounted() {
     this.initMap();
   },
   watch: {
-    '$store.state.drawType': {
+    "$store.state.drawType": {
       handler(val) {
-        if(val) {
-          this.startDraw(this.drawingManager, val)
+        if (val) {
+          this.startDraw(this.drawingManager, val);
         } else {
-          this.drawingManager.close()
+          this.drawingManager.close();
         }
       }
     },
-    '$store.state.editing': {
+    "$store.state.editing": {
       handler(val) {
-        if(!val && this.$store.state.curOverlay) {
-          this.closeEdit(this.$store.state.curOverlay)
+        if (!val && this.$store.state.curOverlay) {
+          this.closeEdit(this.$store.state.curOverlay);
         }
       }
     },
-    '$store.state.deleting': {
+    "$store.state.deleting": {
       handler(val) {
-        if(val && this.$store.state.curOverlay) {
-          this.closeEdit(this.$store.state.curOverlay)
+        if (val && this.$store.state.curOverlay) {
+          this.removeOverlay(this.$store.state.curOverlay, this.map);
         }
       }
     }
@@ -52,79 +51,85 @@ export default {
       map.enableScrollWheelZoom(); // 开启鼠标滚轮缩放
       map.disableDoubleClickZoom(); // 禁用双击放大
 
-      this.map = map
+      this.map = map;
 
-      const drawingManager = _that.initDrawingManager(map)
-      _that.drawingManager = drawingManager
+      const drawingManager = _that.initDrawingManager(map);
+      _that.drawingManager = drawingManager;
     },
     // 初始化绘制工具
     initDrawingManager(map) {
-      const _that = this
+      const _that = this;
       const drawingManager = new BMapLib.DrawingManager(map, {
         isOpen: false, // 是否开启绘制模式
         enableDrawingTool: false, // 是否显示工具栏
         drawingToolOptions: {
           anchor: BMAP_ANCHOR_TOP_RIGHT, // 工具栏位置
           offset: new BMap.Size(5, 5), // 工具栏偏移量
-          drawingModes: [BMAP_DRAWING_MARKER, BMAP_DRAWING_POLYLINE, BMAP_DRAWING_POLYGON], // 绘制模式
+          drawingModes: [
+            BMAP_DRAWING_MARKER,
+            BMAP_DRAWING_POLYLINE,
+            BMAP_DRAWING_POLYGON
+          ] // 绘制模式
         },
         markerOptions: {
           enableDragging: true,
-          draggingCursor: 'move'
+          draggingCursor: "move"
         },
         polylineOptions: {
           strokeColor: "blue",
+          strokeWeight: 10,
           strokeOpacity: 0.4
         },
         polygonOptions: {
           strokeColor: "blue",
+          strokeWeight: 10,
           strokeOpacity: 0.4
-        },
+        }
       });
-      
+
       // 完成点绘制回调函数
-      drawingManager.addEventListener('markercomplete', (marker) => {
-        _that.addMarkerListener(marker)
+      drawingManager.addEventListener("markercomplete", marker => {
+        _that.addMarkerListener(marker);
       });
       // 完成线绘制回调函数
-      drawingManager.addEventListener('polylinecomplete', (polyline) => {
-        _that.addPolylineListener(polyline)
+      drawingManager.addEventListener("polylinecomplete", polyline => {
+        _that.addPolylineListener(polyline);
       });
       // 完成面绘制回调函数
-      drawingManager.addEventListener('polygoncomplete', (polygon) => {
-        _that.addPolygonListener(polygon)
+      drawingManager.addEventListener("polygoncomplete", polygon => {
+        _that.addPolygonListener(polygon);
       });
       return drawingManager;
     },
     // 添加点图层点击事件
     addMarkerListener(marker) {
-      marker.addEventListener('click', () => {
-        console.log('click')
+      marker.addEventListener("click", () => {
+        console.log("click");
       });
     },
     // 添加线图层点击编辑事件
     addPolylineListener(polyline) {
-      polyline.addEventListener('click', () => {
-        if(this.$store.state.editing) {
-          this.$store.dispatch('A_setOverlay', polyline)
-          this.openEdit(polyline)
+      polyline.addEventListener("click", () => {
+        if (this.$store.state.editing) {
+          this.$store.dispatch("A_setOverlay", polyline);
+          this.openEdit(polyline);
         }
       });
-      polyline.addEventListener('lineupdate', (e) => {
-        this.$store.dispatch('A_setOverlay', e.currentTarget)
-      })
+      polyline.addEventListener("lineupdate", e => {
+        this.$store.dispatch("A_setOverlay", e.currentTarget);
+      });
     },
     // 添加面图层点击编辑事件
     addPolygonListener(polygon) {
-      polygon.addEventListener('click', () => {
-        if(this.$store.state.editing) {
-          this.$store.dispatch('A_setOverlay', polygon)
-          this.openEdit(polygon)
+      polygon.addEventListener("click", () => {
+        if (this.$store.state.editing) {
+          this.$store.dispatch("A_setOverlay", polygon);
+          this.openEdit(polygon);
         }
       });
-      polygon.addEventListener('lineupdate', (e) => {
-        this.$store.dispatch('A_setOverlay', e.currentTarget)
-      })
+      polygon.addEventListener("lineupdate", e => {
+        this.$store.dispatch("A_setOverlay", e.currentTarget);
+      });
     },
     // 打开编辑模式
     openEdit(overlay) {
@@ -133,10 +138,13 @@ export default {
     // 取消编辑模式
     closeEdit(overlay) {
       overlay.disableEditing();
-      this.$store.dispatch('A_setOverlay', null)
+      this.$store.dispatch("A_setOverlay", null);
     },
     // 删除
-    removeOverlay() {},
+    removeOverlay(overlay, map) {
+      map.removeOverlay(overlay);
+      this.$store.dispatch("A_confirmRemove");
+    },
     // 开始绘制模式
     startDraw(drawingManager, type) {
       const drawAction = {
@@ -144,9 +152,9 @@ export default {
         line: BMAP_DRAWING_POLYLINE,
         panel: BMAP_DRAWING_POLYGON
       };
-      drawingManager.setDrawingMode(drawAction[type])
-      drawingManager.open()
-    },
+      drawingManager.setDrawingMode(drawAction[type]);
+      drawingManager.open();
+    }
   }
 };
 </script>
