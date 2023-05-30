@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import FixedMenu from '../views/map/FixedMenu.vue'
+import FixedMenu from './FixedMenu.vue'
 
 export default {
   name: 'NavBar',

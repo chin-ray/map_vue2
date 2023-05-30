@@ -1,8 +1,8 @@
 <template>
   <div :class="fixed ? 'views-fixed-menu-wrap' : 'views-normal-menu-wrap'">
-    <el-popover v-model="visible" placement="bottom-end" trigger="manual">
-      <el-button slot="reference" :type="drawType ? 'primary' : ''" @click="visible = !visible">
-        {{ drawTypeOptions[drawType] || "绘制" }}
+    <el-popover v-model="visible" placement="bottom" trigger="manual">
+      <el-button v-show="!editing" slot="reference" :type="drawType ? 'primary' : ''" @click="visible = !visible">
+        {{ drawTypeOptions[drawType] ? `正在绘制: ${drawTypeOptions[drawType]}` : "绘制" }}
       </el-button>
       <div class="fixed-button-group">
         <el-button
@@ -25,8 +25,8 @@
         </el-button>
       </div>
     </el-popover>
-    <el-button v-if="!editing" @click="handleEdit">编辑</el-button>
-    <el-button v-else @click="handleSave">保存</el-button>
+    <el-button v-if="!drawType && !editing" @click="handleEdit">编辑</el-button>
+    <el-button v-if="!drawType && editing" @click="handleSave">保存</el-button>
   </div>
 </template>
 
@@ -71,6 +71,7 @@ export default {
       this.visible = false;
     },
     handleEdit() {
+      this.drawType = ''
       this.$store.dispatch('A_changeEdit', true)
     },
     handleSave() {

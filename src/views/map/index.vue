@@ -12,7 +12,6 @@ export default {
       map: null, // 地图实例
       points: [], // 绘制直线两点
       drawingManager: null, // 绘制图形实例
-      overlays: [], // 图形实例列表
       curOverlay: null // 当前编辑选中图形
     };
   },
@@ -22,7 +21,11 @@ export default {
   watch: {
     '$store.state.drawType': {
       handler(val) {
-        startDraw(this.drawingManager, val)
+        if(val) {
+          this.startDraw(this.drawingManager, val)
+        } else {
+          this.drawingManager.close()
+        }
       }
     },
     '$store.state.editing': {
@@ -52,7 +55,7 @@ export default {
       const _that = this
       const drawingManager = new BMapLib.DrawingManager(map, {
         isOpen: false, // 是否开启绘制模式
-        enableDrawingTool: true, // 是否显示工具栏
+        enableDrawingTool: false, // 是否显示工具栏
         drawingToolOptions: {
           anchor: BMAP_ANCHOR_TOP_RIGHT, // 工具栏位置
           offset: new BMap.Size(5, 5), // 工具栏偏移量
@@ -72,10 +75,6 @@ export default {
         },
       });
       
-      // 图形绘制完成回调函数
-      drawingManager.addEventListener('overlaycomplete', (e) => {
-        this.overlays.push(e.overlay)
-      });
       // 完成点绘制回调函数
       drawingManager.addEventListener('markercomplete', (marker) => {
         _that.addMarkerListener(map, marker)
