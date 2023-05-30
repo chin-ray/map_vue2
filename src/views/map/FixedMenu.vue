@@ -1,8 +1,8 @@
 <template>
-  <div class="views-fixed-menu-wrap">
-    <el-popover v-model="visible" placement="top-start" trigger="manual">
-      <el-button slot="reference" @click="showPanel">
-        {{ drawType ? "结束绘制" : "绘制" }}
+  <div :class="fixed ? 'views-fixed-menu-wrap' : 'views-normal-menu-wrap'">
+    <el-popover v-model="visible" placement="bottom-end" trigger="manual">
+      <el-button slot="reference" :type="drawType ? 'primary' : ''" @click="visible = !visible">
+        {{ drawTypeOptions[drawType] || "绘制" }}
       </el-button>
       <div class="fixed-button-group">
         <el-button
@@ -25,35 +25,46 @@
         </el-button>
       </div>
     </el-popover>
+    <el-button>编辑</el-button>
   </div>
 </template>
 
 <script>
 export default {
   name: "FixedMenu",
+  props: {
+    fixed: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
-      drawType: "",
-      visible: false
+      visible: false,
+      drawType: "", // 绘制类型
+      drawTypeOptions: {
+        dot: '点',
+        line: '线',
+        panel: '面',
+      },
     };
   },
   watch: {
-    drawType: {
+    'drawType': {
       handler(val) {
-        this.handleCheck(val);
-      },
-      immediate: true
+        this.$store.dispatch("A_checkType", val);
+      }
     }
   },
   methods: {
-    showPanel() {
-      this.visible = !this.visible;
-      this.handleCheck("");
-    },
     // 绘制类型选中事件
     handleCheck(type) {
-      this.drawType = type;
-      this.$store.dispatch("A_checkType", type);
+      let relType = type
+      if(this.drawType === type) {
+        relType = ''
+      }
+      this.drawType = relType;
+      this.visible = false;
     }
   }
 };

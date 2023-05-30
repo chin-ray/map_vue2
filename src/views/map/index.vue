@@ -1,110 +1,141 @@
 <template>
   <div class="views-index-wrap">
     <div id="mapContainer"></div>
-    <FixedMenu class="fixed-menu" />
   </div>
 </template>
 
 <script>
-import FixedMenu from "./FixedMenu.vue";
-
 export default {
   name: "Home",
-  components: { FixedMenu },
   data() {
     return {
-      points: [] // 绘制直线两点
+      points: [], // 绘制直线两点
+      drawingManager: null, // 绘制图形实例
+      overlays: [] // 图形实例列表
     };
   },
   mounted() {
     this.initMap();
   },
+  watch: {
+    '$store.state.drawType': {
+      handler(val) {
+        const drawAction = {
+          dot: BMAP_DRAWING_MARKER,
+          line: BMAP_DRAWING_POLYLINE,
+          panel: BMAP_DRAWING_POLYGON
+        };
+        this.drawingManager.setDrawingMode(drawAction[val])
+        this.drawingManager.open()
+      }
+    }
+  },
   methods: {
+    // 初始化地图
     initMap() {
       const _that = this;
       const map = new BMap.Map("mapContainer"); // 创建Map实例
-      const point = new BMap.Point(121.3, 31.06); // 创建点坐标
-      map.centerAndZoom(point, 15); // 初始化地图，设置中心店坐标和地图级别
-      map.enableScrollWheelZoom(true); // 开启鼠标滚轮缩放
+      map.centerAndZoom(new BMap.Point(121.3, 31.06), 15); // 初始化地图，设置中心点坐标和地图级别
+      map.enableScrollWheelZoom(); // 开启鼠标滚轮缩放
+      map.disableDoubleClickZoom(); // 禁用双击放大
 
-      map.addEventListener("click", function(e) {
-        const drawType = _that.$store.state.drawType;
-        const drawAction = {
-          dot: _that.drawPoint,
-          line: _that.drawPolyline,
-          panel: _that.drawPolygon
-        };
-        drawAction[drawType](e, map);
+      map.addEventListener('addoverlay', (e) => {
+        console.log(e)
+      })
+
+      const drawingManager = _that.initDrawingManager(map)
+      _that.drawingManager = drawingManager
+    },
+    // 初始化绘制工具
+    initDrawingManager(map) {
+      const _that = this
+      const drawingManager = new BMapLib.DrawingManager(map, {
+        isOpen: false, // 是否开启绘制模式
+        enableDrawingTool: false, // 是否显示工具栏
+        drawingToolOptions: {
+          anchor: BMAP_ANCHOR_TOP_RIGHT, // 工具栏位置
+          offset: new BMap.Size(5, 5), // 工具栏偏移量
+        },
+        drawingModes: [BMAP_DRAWING_MARKER, BMAP_DRAWING_POLYLINE, BMAP_DRAWING_POLYGON], // 绘制模式
+        markerOptions: {
+          enableDragging: true,
+          draggingCursor: 'move'
+        },
+        polylineOptions: {
+          strokeColor: "blue",
+          strokeOpacity: 0.4
+        },
+        polygonOptions: {
+          strokeColor: "blue",
+          strokeOpacity: 0.4
+        },
+      });
+      
+      // 图形绘制完成回调函数
+      drawingManager.addEventListener('overlaycomplete', (e) => {
+        const overlay = e.overlay
+        overlay.tag_id = overlay.ba
+        this.overlays.push(overlay)
+      });
+      // 点绘制完成回调函数
+      drawingManager.addEventListener('markercomplete', function(marker) {
+        marker.setTitle(marker.ba)
+        _that.addMarkerListener(map, marker)
+      });
+      // 线绘制完成回调函数
+      drawingManager.addEventListener('polylinecomplete', function(polyline) {
+        _that.addPolylineListener(map, polyline)
+      });
+      // 面绘制完成回调函数
+      drawingManager.addEventListener('polygoncomplete', function(polygon) {
+        _that.addPolygonListener(map, polygon)
+      });
+      return drawingManager;
+    },
+    // 添加点图层点击事件
+    addMarkerListener(map, marker) {
+      marker.addEventListener('click', () => {
+        console.log('click')
+        // 弹出操作框
+        // var infoWindow = new BMap.InfoWindow('yourContent', {
+        //   enableMessage: false
+        // });
+        // map.openInfoWindow(infoWindow, marker.getPosition());
       });
     },
-    // 绘制点
-    drawPoint(e, map) {
-      const newPoint = new BMap.Point(e.point.lng, e.point.lat);
-      const newPointMarker = new BMap.Marker(newPoint);
-      map.addOverlay(newPointMarker);
-      newPointMarker.addEventListener("click", function(e) {
-        console.log(e);
+    // 添加线图层点击事件
+    addPolylineListener(map, polyline) {
+      polyline.addEventListener('click', function() {
+        polyline.enableEditing() // 开启编辑
+      });
+      polyline.addEventListener('mouseover', function() {
+        polyline.setStrokeOpacity(0.8)
+      });
+      polyline.addEventListener('mouseout', function() {
+        polyline.setStrokeOpacity(0.4)
       });
     },
-    // 绘制线
-    drawPolyline(e, map) {
-      const _that = this;
-      _that.points.push([e.point.lng, e.point.lat]);
-
-      const newPoint = new BMap.Point(e.point.lng, e.point.lat);
-      const newPointMarker = new BMap.Marker(newPoint);
-      map.addOverlay(newPointMarker);
-
-      if (_that.points.length === 2) {
-        const newPolyline = new BMap.Polyline(
-          _that.points.map(xx => new BMap.Point(xx[0], xx[1])),
-          {
-            strokeColor: "blue",
-            strokeWeight: 2,
-            strokeOpacity: 0.5
-          }
-        );
-        map.addOverlay(newPolyline);
-        _that.points = [];
-      }
-    },
-    // 绘制面
-    drawPolygon(e, map) {
-      const _that = this;
-      // 获取点击的点的坐标
-      const point = e.point;
-      // 将坐标添加到数组中
-      _that.points.push(point);
-
-      const newPoint = new BMap.Point(e.point.lng, e.point.lat);
-      const newPointMarker = new BMap.Marker(newPoint);
-      map.addOverlay(newPointMarker);
-
-      // if (_that.points.length >= 3) {
-      //   // 创建面图层
-      //   const polygon = new BMap.Polygon(_that.points, {
-      //     strokeColor: "blue",
-      //     strokeWeight: 6,
-      //     strokeOpacity: 0.5,
-      //     fillColor: "blue",
-      //     fillOpacity: 0.3
-      //   });
-      //   // 添加面图层到地图上
-      //   map.addOverlay(polygon);
-      //   _that.points = [];
-      // }
+    // 添加面图层点击事件
+    addPolygonListener(map, polygon) {
+      polygon.addEventListener('click', function() {
+        console.log('click')
+      });
+      polygon.addEventListener('mouseover', function() {
+        polygon.setStrokeOpacity(0.8)
+      });
+      polygon.addEventListener('mouseout', function() {
+        polygon.setStrokeOpacity(0.4)
+      });
     },
     // 打开编辑模式
     openEdit() {
       polyline.enableEditing();
       polygon.enableEditing();
-      circle.enableEditing();
     },
     // 取消编辑模式
     closeEdit() {
       polygon.disableEditing();
       polyline.disableEditing();
-      circle.disableEditing();
     }
   }
 };
