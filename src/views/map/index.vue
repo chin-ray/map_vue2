@@ -20,7 +20,7 @@ export default {
   watch: {
     "$store.state.drawType": {
       handler(val) {
-        if (val) {
+        if (val && val !== "dot") {
           this.startDraw(this.drawingManager, val);
         } else {
           this.drawingManager.close();
@@ -55,6 +55,23 @@ export default {
 
       const drawingManager = _that.initDrawingManager(map);
       _that.drawingManager = drawingManager;
+
+      map.addEventListener("click", e => {
+        if (_that.$store.state.drawType === "dot") {
+          const newPoint = new BMap.Point(e.point.lng, e.point.lat);
+          const newPointMarker = new BMap.Marker(newPoint);
+          map.addOverlay(newPointMarker);
+
+          newPointMarker.addEventListener("mousedown", e => {
+            if (_that.$store.state.editing) {
+              this.$store.dispatch("A_setOverlay", newPointMarker);
+              newPointMarker.enableDragging();
+            } else {
+              newPointMarker.disableDragging();
+            }
+          });
+        }
+      });
     },
     // 初始化绘制工具
     initDrawingManager(map) {
@@ -65,14 +82,10 @@ export default {
         drawingToolOptions: {
           anchor: BMAP_ANCHOR_TOP_RIGHT, // 工具栏位置
           offset: new BMap.Size(5, 5), // 工具栏偏移量
-          drawingModes: [
-            BMAP_DRAWING_MARKER,
-            BMAP_DRAWING_POLYLINE,
-            BMAP_DRAWING_POLYGON
-          ] // 绘制模式
+          drawingModes: [BMAP_DRAWING_POLYLINE, BMAP_DRAWING_POLYGON] // 绘制模式
         },
         markerOptions: {
-          enableDragging: true,
+          enableDragging: false,
           draggingCursor: "move"
         },
         polylineOptions: {
@@ -88,9 +101,10 @@ export default {
       });
 
       // 完成点绘制回调函数
-      drawingManager.addEventListener("markercomplete", marker => {
-        _that.addMarkerListener(marker);
-      });
+      // drawingManager.addEventListener("markercomplete", marker => {
+      //   marker.setTop();
+      //   _that.addMarkerListener(marker);
+      // });
       // 完成线绘制回调函数
       drawingManager.addEventListener("polylinecomplete", polyline => {
         _that.addPolylineListener(polyline);
@@ -102,38 +116,37 @@ export default {
       return drawingManager;
     },
     // 添加点图层点击事件
-    addMarkerListener(marker) {
-      marker.addEventListener("click", () => {
-        console.log("click");
-      });
-    },
+    // addMarkerListener(marker) {
+    //   marker.addEventListener("mousedown", () => {
+    //     console.log("click");
+    //   });
+    // },
     // 添加线图层点击编辑事件
     addPolylineListener(polyline) {
-      polyline.addEventListener("click", () => {
-        if (this.$store.state.editing) {
-          this.$store.dispatch("A_setOverlay", polyline);
-          this.openEdit(polyline);
+      polyline.addEventListener("click", e => {
+        if (this.$store.state.editing && !this.$store.state.curOverlay) {
+          this.openEdit(e.target);
         }
       });
       polyline.addEventListener("lineupdate", e => {
-        this.$store.dispatch("A_setOverlay", e.currentTarget);
+        this.$store.dispatch("A_setOverlay", e.target);
       });
     },
     // 添加面图层点击编辑事件
     addPolygonListener(polygon) {
-      polygon.addEventListener("click", () => {
-        if (this.$store.state.editing) {
-          this.$store.dispatch("A_setOverlay", polygon);
-          this.openEdit(polygon);
+      polygon.addEventListener("click", e => {
+        if (this.$store.state.editing && !this.$store.state.curOverlay) {
+          this.openEdit(e.target);
         }
       });
       polygon.addEventListener("lineupdate", e => {
-        this.$store.dispatch("A_setOverlay", e.currentTarget);
+        this.$store.dispatch("A_setOverlay", e.target);
       });
     },
     // 打开编辑模式
     openEdit(overlay) {
       overlay.enableEditing();
+      this.$store.dispatch("A_setOverlay", overlay);
     },
     // 取消编辑模式
     closeEdit(overlay) {
@@ -148,7 +161,6 @@ export default {
     // 开始绘制模式
     startDraw(drawingManager, type) {
       const drawAction = {
-        dot: BMAP_DRAWING_MARKER,
         line: BMAP_DRAWING_POLYLINE,
         panel: BMAP_DRAWING_POLYGON
       };
