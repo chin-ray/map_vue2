@@ -30,8 +30,15 @@ export default {
     },
     '$store.state.editing': {
       handler(val) {
-        if(!val && this.curOverlay) {
-          this.closeEdit(this.map, this.curOverlay)
+        if(!val && this.$store.state.curOverlay) {
+          this.closeEdit(this.$store.state.curOverlay)
+        }
+      }
+    },
+    '$store.state.deleting': {
+      handler(val) {
+        if(val && this.$store.state.curOverlay) {
+          this.closeEdit(this.$store.state.curOverlay)
         }
       }
     }
@@ -77,57 +84,59 @@ export default {
       
       // 完成点绘制回调函数
       drawingManager.addEventListener('markercomplete', (marker) => {
-        _that.addMarkerListener(map, marker)
+        _that.addMarkerListener(marker)
       });
       // 完成线绘制回调函数
       drawingManager.addEventListener('polylinecomplete', (polyline) => {
-        _that.addPolylineListener(map, polyline)
+        _that.addPolylineListener(polyline)
       });
       // 完成面绘制回调函数
       drawingManager.addEventListener('polygoncomplete', (polygon) => {
-        _that.addPolygonListener(map, polygon)
+        _that.addPolygonListener(polygon)
       });
       return drawingManager;
     },
     // 添加点图层点击事件
-    addMarkerListener(map, marker) {
+    addMarkerListener(marker) {
       marker.addEventListener('click', () => {
         console.log('click')
       });
     },
     // 添加线图层点击编辑事件
-    addPolylineListener(map, polyline) {
+    addPolylineListener(polyline) {
       polyline.addEventListener('click', () => {
         if(this.$store.state.editing) {
-          this.curOverlay = polyline
-          this.openEdit(map, polyline)
+          this.$store.dispatch('A_setOverlay', polyline)
+          this.openEdit(polyline)
         }
       });
       polyline.addEventListener('lineupdate', (e) => {
-        this.curOverlay = e.currentTarget
+        this.$store.dispatch('A_setOverlay', e.currentTarget)
       })
     },
     // 添加面图层点击编辑事件
-    addPolygonListener(map, polygon) {
+    addPolygonListener(polygon) {
       polygon.addEventListener('click', () => {
         if(this.$store.state.editing) {
-          this.curOverlay = polygon
-          this.openEdit(map, polygon)
+          this.$store.dispatch('A_setOverlay', polygon)
+          this.openEdit(polygon)
         }
       });
       polygon.addEventListener('lineupdate', (e) => {
-        this.curOverlay = e.currentTarget
+        this.$store.dispatch('A_setOverlay', e.currentTarget)
       })
     },
     // 打开编辑模式
-    openEdit(map, overlay) {
+    openEdit(overlay) {
       overlay.enableEditing();
     },
     // 取消编辑模式
-    closeEdit(map, overlay) {
+    closeEdit(overlay) {
       overlay.disableEditing();
-      this.curOverlay = null
+      this.$store.dispatch('A_setOverlay', null)
     },
+    // 删除
+    removeOverlay() {},
     // 开始绘制模式
     startDraw(drawingManager, type) {
       const drawAction = {
